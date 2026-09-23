@@ -17,8 +17,7 @@ export async function GET(req: NextRequest) {
         collector_id,
         declared_amount,
         accounts_confirmation,
-        created_at,
-        users (id, name, role, phone)
+        created_at
       `
       )
       .eq("payer_confirmation", "CONFIRMED")
@@ -26,17 +25,32 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
+    // Get all collectors (coaches/staff)
+    const { data: collectors } = await supabase
+      .from("users")
+      .select("id, name, role, phone")
+      .in("role", ["COACH", "SUPPORT_STAFF"])
+      .eq("status", "ACTIVE");
+
+    // Create collector map
+    const collectorMap: any = {};
+    collectors?.forEach((c) => {
+      collectorMap[c.id] = c;
+    });
+
     // Aggregate by collector
     const collectorStats: any = {};
 
     declarations?.forEach((decl) => {
       const collectorId = decl.collector_id;
+      const collector = collectorMap[collectorId];
+
       if (!collectorStats[collectorId]) {
         collectorStats[collectorId] = {
           id: collectorId,
-          name: decl.users?.name || "Unknown",
-          role: decl.users?.role || "UNKNOWN",
-          phone: decl.users?.phone || "",
+          name: collector?.name || "Unknown",
+          role: collector?.role || "UNKNOWN",
+          phone: collector?.phone || "",
           total_collected: 0,
           pending_approval: 0,
           approved: 0,
@@ -44,10 +58,12 @@ export async function GET(req: NextRequest) {
         };
       }
 
-      collectorStats[collectorId].total_collected += decl.declared_amount || 0;
+      collectorStats[collectorId].total_collected +=
+        decl.declared_amount || 0;
 
       if (decl.accounts_confirmation === null) {
-        collectorStats[collectorId].pending_approval += decl.declared_amount || 0;
+        collectorStats[collectorId].pending_approval +=
+          decl.declared_amount || 0;
       } else if (decl.accounts_confirmation === "CONFIRMED") {
         collectorStats[collectorId].approved += decl.declared_amount || 0;
       } else if (decl.accounts_confirmation === "REJECTED") {
@@ -60,7 +76,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       collectors: stats,
       total_declarations: declarations?.length || 0,
-      total_amount: stats.reduce((sum: number, c: any) => sum + c.total_collected, 0),
+      total_amount: stats.reduce(
+        (sum: number, c: any) => sum + c.total_collected,
+        0
+      ),
     });
   } catch (err) {
     console.error("Error fetching collections:", err);
