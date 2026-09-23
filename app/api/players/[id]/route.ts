@@ -1,39 +1,46 @@
-﻿export async function GET(
-  request: Request,
+﻿import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const playerId = params.id;
 
-    // Demo player 360 data
-    const demoPlayer = {
-      id: playerId,
-      full_name: "Rahul Sharma",
-      player_code: "GNX-CRK-000001",
-      date_of_birth: "2010-05-15",
-      gender: "M",
-      phone: "9876543210",
-      email: "rahul@demo.local",
-      cricket_category: "U-15",
-      batting_style: "Right-handed",
-      bowling_style: "Right-arm fast",
-      joining_date: "2026-01-12",
-      status: "active",
-      batch_id: "batch-1",
-      batch_name: "U-15 Evening A",
-      attendance_percentage: 91,
-      total_sessions: 22,
-      attended_sessions: 20,
-      monthly_fee: 2000,
-      current_fee_status: "reconciled",
-      goals_count: 3,
-      drills_assigned: 12,
-      drills_completed: 8,
-      videos_submitted: 4,
-    };
+    // Get player
+    const { data: player, error: playerError } = await supabase
+      .from("players")
+      .select("*")
+      .eq("id", playerId)
+      .single();
 
-    return Response.json({ player: demoPlayer });
-  } catch (error) {
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    if (playerError || !player) {
+      return NextResponse.json({ error: "Player not found" }, { status: 404 });
+    }
+
+    // Get outstanding fees (status = DUE or PAYMENT_DECLARED)
+    const { data: fees } = await supabase
+      .from("fee_obligations")
+      .select("*")
+      .eq("player_id", playerId)
+      .in("status", ["DUE", "PAYMENT_DECLARED"])
+      .order("created_at", { ascending: false });
+
+    return NextResponse.json({
+      player,
+      fees: fees || [],
+    });
+  } catch (err) {
+    console.error("Error fetching player:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch player" },
+      { status: 500 }
+    );
   }
 }
