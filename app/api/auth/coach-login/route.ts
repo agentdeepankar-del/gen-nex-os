@@ -17,26 +17,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: player } = await supabase
-      .from("players")
-      .select("id, full_name, phone, status")
+    const { data: coach } = await supabase
+      .from("users")
+      .select("id, name, phone, role, password_hash")
       .eq("phone", phone)
+      .in("role", ["COACH", "SUPPORT_STAFF"])
       .single();
 
-    if (!player) {
+    if (!coach) {
       return NextResponse.json(
-        { error: "Player not found" },
+        { error: "Coach not found" },
         { status: 404 }
       );
     }
 
-    const { data: authUser } = await supabase
-      .from("users")
-      .select("password_hash")
-      .eq("id", player.id)
-      .single();
-
-    if (!authUser || authUser.password_hash !== password) {
+    if (coach.password_hash !== password) {
       return NextResponse.json(
         { error: "Invalid password" },
         { status: 401 }
@@ -44,10 +39,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      player_id: player.id,
-      full_name: player.full_name,
-      phone: player.phone,
-      status: player.status,
+      coach_id: coach.id,
+      name: coach.name,
+      phone: coach.phone,
+      role: coach.role,
       message: "Login successful",
     });
   } catch (err) {
