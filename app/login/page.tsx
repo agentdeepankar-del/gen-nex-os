@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("owner@demo.local");
+  const [identifier, setIdentifier] = useState("owner@demo.local");
   const [password, setPassword] = useState("demo123456");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,10 +16,24 @@ export default function LoginPage() {
     setError("");
 
     try {
+      const isEmail = identifier.includes("@");
+      const isPhone = /^\d{10}$/.test(identifier);
+
+      const payload: any = { password };
+      if (isEmail) {
+        payload.email = identifier;
+      } else if (isPhone) {
+        payload.phone = identifier;
+      } else {
+        setError("Enter valid email or 10-digit phone");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -50,13 +64,14 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Email</label>
+            <label className="block text-sm font-medium mb-2">Email or Phone</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="owner@demo.local"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="owner@demo.local or 9009000100"
               disabled={loading}
+              className="w-full px-3 py-2 border rounded"
             />
           </div>
 
@@ -68,15 +83,16 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="demo123456"
               disabled={loading}
+              className="w-full px-3 py-2 border rounded"
             />
           </div>
 
-          {error && <div className="error bg-red-50 p-3 rounded">{error}</div>}
+          {error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>}
 
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition disabled:bg-gray-400"
           >
             {loading ? "Logging in..." : "Login"}
           </button>
@@ -89,7 +105,10 @@ export default function LoginPage() {
               <span className="font-medium">Owner:</span> owner@demo.local / demo123456
             </div>
             <div>
-              <span className="font-medium">Coach:</span> Use name + auto-generated code
+              <span className="font-medium">Coach:</span> 9001001001 / temppin123
+            </div>
+            <div>
+              <span className="font-medium">Player:</span> 9009000100 / player123
             </div>
           </div>
         </div>
