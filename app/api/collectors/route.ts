@@ -8,9 +8,8 @@ const supabase = createClient(
 
 export async function GET(req: NextRequest) {
   try {
-    // Get all coaches and support staff who are active
     const { data: collectors, error } = await supabase
-      .from("users")
+      .from("user")
       .select("id, name, phone, role")
       .in("role", ["COACH", "SUPPORT_STAFF"])
       .eq("status", "ACTIVE")

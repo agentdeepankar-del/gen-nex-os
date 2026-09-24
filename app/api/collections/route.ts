@@ -8,9 +8,8 @@ const supabase = createClient(
 
 export async function GET(req: NextRequest) {
   try {
-    // Get all payment declarations grouped by collector
     const { data: declarations, error } = await supabase
-      .from("payment_declarations")
+      .from("payment_declaration")
       .select(
         `
         id,
@@ -25,20 +24,17 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    // Get all collectors (coaches/staff)
     const { data: collectors } = await supabase
-      .from("users")
+      .from("user")
       .select("id, name, role, phone")
       .in("role", ["COACH", "SUPPORT_STAFF"])
       .eq("status", "ACTIVE");
 
-    // Create collector map
     const collectorMap: any = {};
     collectors?.forEach((c) => {
       collectorMap[c.id] = c;
     });
 
-    // Aggregate by collector
     const collectorStats: any = {};
 
     declarations?.forEach((decl) => {

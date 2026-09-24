@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
       batch_id,
     } = body;
 
-    // Validate required fields
     if (!full_name || !phone || !batch_id) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -33,9 +32,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if phone already registered
     const { data: existing } = await supabase
-      .from("players")
+      .from("player")
       .select("id")
       .eq("phone", phone)
       .single();
@@ -47,12 +45,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate player code
-    const playerCode = `GNX-CRK-${String(Date.now()).slice(-6)}`;
+    const playerCode = `GNX-CRK-` + String(Date.now()).slice(-6);
 
-    // Create player
     const { data: player, error } = await supabase
-      .from("players")
+      .from("player")
       .insert([
         {
           academy_id: process.env.NEXT_PUBLIC_DEMO_ACADEMY_ID,
@@ -79,8 +75,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    // Create joining fee obligation (₹5,000)
-    await supabase.from("fee_obligations").insert([
+    await supabase.from("fee_obligation").insert([
       {
         id: crypto.randomUUID(),
         player_id: player.id,
@@ -93,11 +88,10 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    // Create monthly fee obligation (₹2,000) for current month
     const now = new Date();
     const dueDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
-    await supabase.from("fee_obligations").insert([
+    await supabase.from("fee_obligation").insert([
       {
         id: crypto.randomUUID(),
         player_id: player.id,
@@ -110,8 +104,7 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    // Log audit
-    await supabase.from("audit_logs").insert([
+    await supabase.from("audit_log").insert([
       {
         academy_id: process.env.NEXT_PUBLIC_DEMO_ACADEMY_ID,
         entity_type: "PLAYER",
@@ -126,7 +119,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       player_id: player.id,
       player_code: playerCode,
-      message: "Registration successful. Please declare your joining fee.",
+      message: "Registration successful",
     });
   } catch (err) {
     console.error("Registration error:", err);

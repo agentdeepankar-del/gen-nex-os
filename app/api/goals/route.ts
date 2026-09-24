@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    await supabase.from("audit_logs").insert([
+    await supabase.from("audit_log").insert([
       {
         academy_id: process.env.NEXT_PUBLIC_DEMO_ACADEMY_ID,
         entity_type: "GOAL",
