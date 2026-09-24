@@ -1,8 +1,8 @@
 ﻿export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, phone, password } = await request.json();
 
-    // Demo credentials
+    // Owner login (email-based)
     if (email === "owner@demo.local" && password === "demo123456") {
       return Response.json({
         token: "demo-owner-token",
@@ -12,11 +12,22 @@
       });
     }
 
-    if (email === "coach@demo.local" && password === "demo123456") {
+    // Coach login (phone-based)
+    if (phone === "9001001001" && password === "temppin123") {
       return Response.json({
         token: "demo-coach-token",
         role: "coach",
         user_id: "demo-coach-1",
+        academy_id: "demo-academy-1",
+      });
+    }
+
+    // Player login (phone-based)
+    if (phone === "9009000100" && password === "player123") {
+      return Response.json({
+        token: "demo-player-token",
+        role: "player",
+        user_id: "demo-player-1",
         academy_id: "demo-academy-1",
       });
     }
