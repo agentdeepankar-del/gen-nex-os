@@ -34,13 +34,21 @@ export default function DashboardPage() {
 
   const fetchMetrics = async () => {
     try {
+      const authToken = localStorage.getItem("auth_token");
       const academyId = localStorage.getItem("academy_id");
-      const res = await fetch(`/api/admin/revenue?academy_id=${academyId}`);
+      
+      const res = await fetch(`/api/admin/revenue?academy_id=${academyId}`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+      
       if (!res.ok) throw new Error("Failed to fetch metrics");
       const data = await res.json();
       setMetrics(data.metrics);
     } catch (err) {
       setError("Failed to load dashboard");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -51,7 +59,9 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
-  if (!metrics && !loading) {
+  if (loading) return <div className="container py-12"><p>Loading...</p></div>;
+
+  if (error) {
     return (
       <div className="container py-12">
         <div className="card">
@@ -66,7 +76,6 @@ export default function DashboardPage() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
       <header className="bg-white shadow border-b">
         <div className="container py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">GEN NEX OS</h1>
@@ -76,7 +85,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Navigation */}
       <nav className="bg-white border-b shadow-sm">
         <div className="container py-3 flex gap-6">
           <a href="/dashboard" className="font-medium text-blue-600 border-b-2 border-blue-600 pb-3">
@@ -88,41 +96,29 @@ export default function DashboardPage() {
           <a href="/admin" className="text-gray-600 hover:text-gray-900">
             Admin
           </a>
-          <a href="/reports" className="text-gray-600 hover:text-gray-900">
-            Reports
-          </a>
         </div>
       </nav>
 
-      {/* Content */}
       <main className="container py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="card">
             <p className="text-gray-600 text-sm mb-2">Active Players</p>
-            <p className="text-3xl font-bold text-gray-900">
-              {loading ? "-" : metrics?.active_players || 0}
-            </p>
+            <p className="text-3xl font-bold">{metrics?.active_players || 0}</p>
           </div>
 
           <div className="card">
             <p className="text-gray-600 text-sm mb-2">Expected Revenue</p>
-            <p className="text-3xl font-bold text-gray-900">
-              {loading ? "-" : `₹${(metrics?.expected_revenue || 0).toLocaleString("en-IN")}`}
-            </p>
+            <p className="text-3xl font-bold">₹{(metrics?.expected_revenue || 0).toLocaleString("en-IN")}</p>
           </div>
 
           <div className="card">
             <p className="text-gray-600 text-sm mb-2">Reconciled</p>
-            <p className="text-3xl font-bold text-green-600">
-              {loading ? "-" : `₹${(metrics?.reconciled_revenue || 0).toLocaleString("en-IN")}`}
-            </p>
+            <p className="text-3xl font-bold text-green-600">₹{(metrics?.reconciled_revenue || 0).toLocaleString("en-IN")}</p>
           </div>
 
           <div className="card">
-            <p className="text-gray-600 text-sm mb-2">Revenue At Risk</p>
-            <p className="text-3xl font-bold text-red-600">
-              {loading ? "-" : `₹${((metrics?.outstanding || 0) + (metrics?.mismatches || 0)).toLocaleString("en-IN")}`}
-            </p>
+            <p className="text-gray-600 text-sm mb-2">At Risk</p>
+            <p className="text-3xl font-bold text-red-600">₹{(((metrics?.outstanding || 0) + (metrics?.mismatches || 0))).toLocaleString("en-IN")}</p>
           </div>
         </div>
 
@@ -133,18 +129,12 @@ export default function DashboardPage() {
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm font-medium">Reconciliation Rate</span>
-                  <span className="text-sm font-bold">
-                    {loading
-                      ? "-"
-                      : `${Math.round(((metrics?.reconciled_revenue || 0) / (metrics?.expected_revenue || 1)) * 100)}%`}
-                  </span>
+                  <span className="text-sm font-bold">{Math.round(((metrics?.reconciled_revenue || 0) / (metrics?.expected_revenue || 1)) * 100)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
                     className="bg-green-500 h-3 rounded-full"
-                    style={{
-                      width: `${loading ? 0 : Math.round(((metrics?.reconciled_revenue || 0) / (metrics?.expected_revenue || 1)) * 100)}%`,
-                    }}
+                    style={{ width: `${Math.round(((metrics?.reconciled_revenue || 0) / (metrics?.expected_revenue || 1)) * 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -156,15 +146,15 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center pb-3 border-b">
                 <span className="text-sm">Pending Approvals</span>
-                <span className="badge badge-warning">{loading ? "-" : metrics?.pending_approvals || 0}</span>
+                <span className="badge badge-warning">{metrics?.pending_approvals || 0}</span>
               </div>
               <div className="flex justify-between items-center pb-3 border-b">
                 <span className="text-sm">Pending Payments</span>
-                <span className="badge badge-danger">{loading ? "-" : metrics?.pending_payments || 0}</span>
+                <span className="badge badge-danger">{metrics?.pending_payments || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">Payment Mismatches</span>
-                <span className="badge badge-danger">{loading ? "-" : metrics?.mismatches || 0}</span>
+                <span className="badge badge-danger">{metrics?.mismatches || 0}</span>
               </div>
             </div>
           </div>
